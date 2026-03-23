@@ -4,8 +4,10 @@ version = "0.1.0"
 edition = "2021"
 license = "GPL-3.0-or-later"
 description = "SNN-based Anti-Hallucination Layer router: sparse keyword-to-domain routing via LIF neurons with STDP feedback for LLM output verification"
+repository = "https://github.com/rmems/spikenaut-router"
 keywords = ["snn", "neuromorphic", "routing", "lif", "spikenaut"]
 categories = ["science", "algorithms", "text-processing"]
+exclude = ["docs/"]
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
