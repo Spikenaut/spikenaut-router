@@ -57,52 +57,186 @@
 use serde::{Deserialize, Serialize};
 
 use crate::lif::LifNeuron;
+use crate::sparse::{RoutingPolicy, SparseSynapticMap, TelemetrySnapshot};
 
 // ── Keyword lists (lowercase) ─────────────────────────────────────────────
 
 const CHEM_KEYWORDS: &[&str] = &[
-    "mole", "molarity", "stoichiom", "reactant", "product", "yield",
-    "enthalpy", "entropy", "gibbs", "thermodynamic", "exothermic", "endothermic",
-    "equilibrium", "le chatelier", "acid", "base", "ph", "buffer",
-    "oxidation", "reduction", "redox", "electrochemistry", "galvanic",
-    "ideal gas", "van der waals", "clapeyron", "pressure", "volume",
-    "boyle", "charles", "avogadro", "dalton", "partial pressure",
-    "lewis structure", "vsepr", "hybridization", "molecular geometry",
-    "balanced equation", "limiting", "excess", "theoretical yield",
-    "calorimetry", "hess", "bond energy", "lattice energy",
-    "molality", "colligative", "osmotic", "raoult",
-    "naoh", "hcl", "h2o", "nacl", "h2so4", "co2",
+    "mole",
+    "molarity",
+    "stoichiom",
+    "reactant",
+    "product",
+    "yield",
+    "enthalpy",
+    "entropy",
+    "gibbs",
+    "thermodynamic",
+    "exothermic",
+    "endothermic",
+    "equilibrium",
+    "le chatelier",
+    "acid",
+    "base",
+    "ph",
+    "buffer",
+    "oxidation",
+    "reduction",
+    "redox",
+    "electrochemistry",
+    "galvanic",
+    "ideal gas",
+    "van der waals",
+    "clapeyron",
+    "pressure",
+    "volume",
+    "boyle",
+    "charles",
+    "avogadro",
+    "dalton",
+    "partial pressure",
+    "lewis structure",
+    "vsepr",
+    "hybridization",
+    "molecular geometry",
+    "balanced equation",
+    "limiting",
+    "excess",
+    "theoretical yield",
+    "calorimetry",
+    "hess",
+    "bond energy",
+    "lattice energy",
+    "molality",
+    "colligative",
+    "osmotic",
+    "raoult",
+    "naoh",
+    "hcl",
+    "h2o",
+    "nacl",
+    "h2so4",
+    "co2",
 ];
 
 const MATH_KEYWORDS: &[&str] = &[
-    "derivative", "integral", "differentiat", "antiderivative", "limit",
-    "calculus", "chain rule", "product rule", "quotient rule",
-    "taylor", "maclaurin", "series", "convergence", "divergence",
-    "polynomial", "quadratic", "factoring", "roots", "discriminant",
-    "logarithm", "exponential", "trig", "sine", "cosine", "tangent",
-    "algebra", "equation", "inequality", "simplif", "expand",
-    "matrix", "determinant", "eigenvalue", "vector", "linear algebra",
-    "proof", "theorem", "lemma", "geometry", "euclidean",
-    "congruent", "similar", "parallel", "perpendicular", "angle",
-    "conic", "parabola", "ellipse", "hyperbola",
-    "sequence", "arithmetic", "geometric", "fibonacci",
-    "permutation", "combination", "binomial",
-    "symbolics", "canonical", "equivalence",
+    "derivative",
+    "integral",
+    "differentiat",
+    "antiderivative",
+    "limit",
+    "calculus",
+    "chain rule",
+    "product rule",
+    "quotient rule",
+    "taylor",
+    "maclaurin",
+    "series",
+    "convergence",
+    "divergence",
+    "polynomial",
+    "quadratic",
+    "factoring",
+    "roots",
+    "discriminant",
+    "logarithm",
+    "exponential",
+    "trig",
+    "sine",
+    "cosine",
+    "tangent",
+    "algebra",
+    "equation",
+    "inequality",
+    "simplif",
+    "expand",
+    "matrix",
+    "determinant",
+    "eigenvalue",
+    "vector",
+    "linear algebra",
+    "proof",
+    "theorem",
+    "lemma",
+    "geometry",
+    "euclidean",
+    "congruent",
+    "similar",
+    "parallel",
+    "perpendicular",
+    "angle",
+    "conic",
+    "parabola",
+    "ellipse",
+    "hyperbola",
+    "sequence",
+    "arithmetic",
+    "geometric",
+    "fibonacci",
+    "permutation",
+    "combination",
+    "binomial",
+    "symbolics",
+    "canonical",
+    "equivalence",
 ];
 
 const LOGIC_KEYWORDS: &[&str] = &[
-    "boolean", "truth table", "and gate", "or gate", "not gate",
-    "nand", "nor", "xor", "xnor", "logic gate",
-    "karnaugh", "k-map", "minterm", "maxterm", "sop", "pos",
-    "quine-mccluskey", "minimiz", "simplif",
-    "flip-flop", "latch", "register", "counter",
-    "fsm", "finite state", "mealy", "moore", "state machine",
-    "state diagram", "transition table", "reachab", "determinism",
-    "combinational", "sequential", "decoder", "encoder", "mux",
-    "multiplexer", "demux", "alu", "adder", "subtractor",
-    "verilog", "vhdl", "fpga", "lut", "rtl",
-    "satisfiab", "smt", "sat solver", "counter-example",
-    "don't care", "hazard", "glitch", "timing",
+    "boolean",
+    "truth table",
+    "and gate",
+    "or gate",
+    "not gate",
+    "nand",
+    "nor",
+    "xor",
+    "xnor",
+    "logic gate",
+    "karnaugh",
+    "k-map",
+    "minterm",
+    "maxterm",
+    "sop",
+    "pos",
+    "quine-mccluskey",
+    "minimiz",
+    "simplif",
+    "flip-flop",
+    "latch",
+    "register",
+    "counter",
+    "fsm",
+    "finite state",
+    "mealy",
+    "moore",
+    "state machine",
+    "state diagram",
+    "transition table",
+    "reachab",
+    "determinism",
+    "combinational",
+    "sequential",
+    "decoder",
+    "encoder",
+    "mux",
+    "multiplexer",
+    "demux",
+    "alu",
+    "adder",
+    "subtractor",
+    "verilog",
+    "vhdl",
+    "fpga",
+    "lut",
+    "rtl",
+    "satisfiab",
+    "smt",
+    "sat solver",
+    "counter-example",
+    "don't care",
+    "hazard",
+    "glitch",
+    "timing",
 ];
 
 // ── Verification domains ──────────────────────────────────────────────────
@@ -119,16 +253,13 @@ pub enum VerificationDomain {
 }
 
 impl VerificationDomain {
-    pub const ALL: [VerificationDomain; 3] = [
-        Self::Chemistry,
-        Self::Mathematics,
-        Self::DigitalLogic,
-    ];
+    pub const ALL: [VerificationDomain; 3] =
+        [Self::Chemistry, Self::Mathematics, Self::DigitalLogic];
 
     pub fn index(self) -> usize {
         match self {
-            Self::Chemistry    => 0,
-            Self::Mathematics  => 1,
+            Self::Chemistry => 0,
+            Self::Mathematics => 1,
             Self::DigitalLogic => 2,
         }
     }
@@ -144,8 +275,8 @@ impl VerificationDomain {
 
     pub fn label(self) -> &'static str {
         match self {
-            Self::Chemistry    => "Deep Chemistry",
-            Self::Mathematics  => "Advanced Math",
+            Self::Chemistry => "Deep Chemistry",
+            Self::Mathematics => "Advanced Math",
             Self::DigitalLogic => "Digital Logic",
         }
     }
@@ -156,8 +287,8 @@ impl VerificationDomain {
 /// Domain signal strengths extracted from text, normalised to `[0.0, 1.0]`.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct DomainSignals {
-    pub chemistry:     f32,
-    pub mathematics:   f32,
+    pub chemistry: f32,
+    pub mathematics: f32,
     pub digital_logic: f32,
 }
 
@@ -169,8 +300,8 @@ impl DomainSignals {
         let lower = text.to_lowercase();
         const SATURATION: f32 = 8.0;
         Self {
-            chemistry:     (count_hits(&lower, CHEM_KEYWORDS) as f32 / SATURATION).min(1.0),
-            mathematics:   (count_hits(&lower, MATH_KEYWORDS) as f32 / SATURATION).min(1.0),
+            chemistry: (count_hits(&lower, CHEM_KEYWORDS) as f32 / SATURATION).min(1.0),
+            mathematics: (count_hits(&lower, MATH_KEYWORDS) as f32 / SATURATION).min(1.0),
             digital_logic: (count_hits(&lower, LOGIC_KEYWORDS) as f32 / SATURATION).min(1.0),
         }
     }
@@ -239,17 +370,22 @@ impl Default for AhlRouter {
 
 impl AhlRouter {
     pub fn new() -> Self {
-        let neurons = (0..AHL_NUM_CHANNELS).map(|i| {
-            let mut n = LifNeuron::new();
-            // Strong self-affinity; weak cross-domain inhibition.
-            n.weights = vec![-0.15; AHL_NUM_CHANNELS];
-            n.weights[i] = 0.9;
-            n.threshold = 0.22;
-            n.decay_rate = 0.12;
-            n
-        }).collect();
+        let neurons = (0..AHL_NUM_CHANNELS)
+            .map(|i| {
+                let mut n = LifNeuron::new();
+                // Strong self-affinity; weak cross-domain inhibition.
+                n.weights = vec![-0.15; AHL_NUM_CHANNELS];
+                n.weights[i] = 0.9;
+                n.threshold = 0.22;
+                n.decay_rate = 0.12;
+                n
+            })
+            .collect();
 
-        Self { neurons, total_routes: 0 }
+        Self {
+            neurons,
+            total_routes: 0,
+        }
     }
 
     /// Route `text` through the SNN — returns the sparse `RoutingDecision`.
@@ -272,7 +408,8 @@ impl AhlRouter {
         // Integrate over ROUTING_TIMESTEPS.
         for _ in 0..ROUTING_TIMESTEPS {
             for (i, neuron) in self.neurons.iter_mut().enumerate() {
-                let stimulus: f32 = channels.iter()
+                let stimulus: f32 = channels
+                    .iter()
                     .zip(neuron.weights.iter())
                     .map(|(ch, w)| ch * w)
                     .sum();
@@ -298,7 +435,11 @@ impl AhlRouter {
         }
 
         self.total_routes += 1;
-        RoutingDecision { active_domains, firing_rates, input_signals: signals }
+        RoutingDecision {
+            active_domains,
+            firing_rates,
+            input_signals: signals,
+        }
     }
 
     /// Apply verification outcome as a reward/punishment signal (simplified STDP).
@@ -312,8 +453,7 @@ impl AhlRouter {
         let idx = domain.index();
         let delta = reward * 0.01; // small LR for stability
 
-        self.neurons[idx].weights[idx] =
-            (self.neurons[idx].weights[idx] + delta).clamp(0.1, 2.0);
+        self.neurons[idx].weights[idx] = (self.neurons[idx].weights[idx] + delta).clamp(0.1, 2.0);
 
         if reward > 0.0 {
             for j in 0..AHL_NUM_CHANNELS {
@@ -334,5 +474,166 @@ impl AhlRouter {
             }
         }
         m
+    }
+
+    /// Convert the current dense weights to a sparse synaptic map (CSR format).
+    pub fn to_sparse_map(&self, sparsity_threshold: f32) -> SparseSynapticMap<AHL_NUM_CHANNELS> {
+        let dense = self.weight_matrix();
+        SparseSynapticMap::from_dense(&dense, sparsity_threshold)
+    }
+
+    /// Capture a telemetry snapshot for SAAQ integration.
+    pub fn capture_telemetry(&self, step: u64) -> TelemetrySnapshot {
+        let mut snapshot = TelemetrySnapshot::new(AHL_NUM_CHANNELS);
+        for (i, n) in self.neurons.iter().enumerate() {
+            snapshot.adaptation[i] = n.adaptation;
+            snapshot.spike_counts[i] = n.total_spikes as u32;
+            snapshot.quant_error[i] = n.quant_error_estimate();
+        }
+        snapshot.step = step;
+        snapshot
+    }
+
+    /// Route with SAAQ adaptation awareness — uses the telemetry snapshot to
+    /// modulate stimulus based on neuron adaptation state.
+    pub fn route_adaptive(&mut self, text: &str, telemetry: &TelemetrySnapshot) -> RoutingDecision {
+        let signals = DomainSignals::from_text(text);
+        self.route_from_signals_adaptive(signals, telemetry)
+    }
+
+    /// Route from pre-computed signals with SAAQ adaptation modulation.
+    pub fn route_from_signals_adaptive(
+        &mut self,
+        signals: DomainSignals,
+        telemetry: &TelemetrySnapshot,
+    ) -> RoutingDecision {
+        let channels = signals.as_channels();
+        let mut spike_counts = [0u32; AHL_NUM_CHANNELS];
+
+        for n in &mut self.neurons {
+            n.membrane_potential = 0.0;
+            n.last_spike = false;
+        }
+
+        for _ in 0..ROUTING_TIMESTEPS {
+            for (i, neuron) in self.neurons.iter_mut().enumerate() {
+                let base_stimulus: f32 = channels
+                    .iter()
+                    .zip(neuron.weights.iter())
+                    .map(|(ch, w)| ch * w)
+                    .sum();
+                let adapt_penalty = telemetry.adaptation_penalty(i, 0.5);
+                let quant_bonus = telemetry.quant_bonus(i, 0.3);
+                let modulated = (base_stimulus - adapt_penalty + quant_bonus).max(0.0);
+                neuron.integrate(modulated);
+                if neuron.check_fire().is_some() {
+                    spike_counts[i] += 1;
+                    neuron.last_spike = true;
+                } else {
+                    neuron.last_spike = false;
+                }
+            }
+        }
+
+        let mut firing_rates = [0.0f32; AHL_NUM_CHANNELS];
+        let mut active_domains = Vec::new();
+        for i in 0..AHL_NUM_CHANNELS {
+            firing_rates[i] = spike_counts[i] as f32 / ROUTING_TIMESTEPS as f32;
+            if firing_rates[i] >= MIN_FIRE_RATE {
+                if let Some(domain) = VerificationDomain::from_index(i) {
+                    active_domains.push(domain);
+                }
+            }
+        }
+
+        self.total_routes += 1;
+        RoutingDecision {
+            active_domains,
+            firing_rates,
+            input_signals: signals,
+        }
+    }
+
+    /// Route using a Ballast-Lab discovered policy equation.
+    pub fn route_with_policy(
+        &mut self,
+        text: &str,
+        telemetry: &TelemetrySnapshot,
+        policy: &RoutingPolicy,
+    ) -> RoutingDecision {
+        let signals = DomainSignals::from_text(text);
+        let channels = signals.as_channels();
+        let mut spike_counts = [0u32; AHL_NUM_CHANNELS];
+
+        for n in &mut self.neurons {
+            n.membrane_potential = 0.0;
+            n.last_spike = false;
+        }
+
+        for _ in 0..ROUTING_TIMESTEPS {
+            for (i, neuron) in self.neurons.iter_mut().enumerate() {
+                let base_stimulus: f32 = channels
+                    .iter()
+                    .zip(neuron.weights.iter())
+                    .map(|(ch, w)| ch * w)
+                    .sum();
+                let score = policy.score(i, telemetry, base_stimulus);
+                let modulated = score.max(0.0);
+                neuron.integrate(modulated);
+                if neuron.check_fire().is_some() {
+                    spike_counts[i] += 1;
+                    neuron.last_spike = true;
+                } else {
+                    neuron.last_spike = false;
+                }
+            }
+        }
+
+        let mut firing_rates = [0.0f32; AHL_NUM_CHANNELS];
+        let mut active_domains = Vec::new();
+        for i in 0..AHL_NUM_CHANNELS {
+            firing_rates[i] = spike_counts[i] as f32 / ROUTING_TIMESTEPS as f32;
+            if firing_rates[i] >= MIN_FIRE_RATE {
+                if let Some(domain) = VerificationDomain::from_index(i) {
+                    active_domains.push(domain);
+                }
+            }
+        }
+
+        self.total_routes += 1;
+        RoutingDecision {
+            active_domains,
+            firing_rates,
+            input_signals: signals,
+        }
+    }
+
+    /// Export routing telemetry to CSV format for Ballast-Lab ingestion.
+    ///
+    /// Format: step,domain,adaptation,spike_count,quant_error,firing_rate,active
+    pub fn telemetry_csv(
+        &self,
+        telemetry: &TelemetrySnapshot,
+        firing_rates: &[f32; AHL_NUM_CHANNELS],
+    ) -> String {
+        let mut csv =
+            String::from("step,domain,adaptation,spike_count,quant_error,firing_rate,active\n");
+        for (i, &rate) in firing_rates.iter().enumerate() {
+            let domain = VerificationDomain::from_index(i)
+                .map(|d| d.label())
+                .unwrap_or("unknown");
+            let active = rate >= MIN_FIRE_RATE;
+            csv.push_str(&format!(
+                "{},{},{:.4},{},{:.4},{:.4},{}\n",
+                telemetry.step,
+                domain,
+                telemetry.adaptation.get(i).copied().unwrap_or(0.0),
+                telemetry.spike_counts.get(i).copied().unwrap_or(0),
+                telemetry.quant_error.get(i).copied().unwrap_or(0.0),
+                rate,
+                active,
+            ));
+        }
+        csv
     }
 }

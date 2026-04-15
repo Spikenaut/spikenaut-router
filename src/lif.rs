@@ -48,9 +48,24 @@ pub struct LifNeuron {
     /// Global step index of the most recent spike (for STDP Δt calculation).
     #[serde(default = "default_last_spike_time")]
     pub last_spike_time: i64,
+    /// Adaptation state for SAAQ-aware routing (0.0 = fresh, 1.0 = exhausted).
+    #[serde(default)]
+    pub adaptation: f32,
+    /// Adaptation decay rate per timestep (how quickly the neuron recovers).
+    #[serde(default = "default_adaptation_decay")]
+    pub adaptation_decay: f32,
+    /// Cumulative spike count for telemetry.
+    #[serde(default)]
+    pub total_spikes: u64,
 }
 
-fn default_last_spike_time() -> i64 { -1 }
+fn default_adaptation_decay() -> f32 {
+    0.02
+}
+
+fn default_last_spike_time() -> i64 {
+    -1
+}
 
 impl Default for LifNeuron {
     fn default() -> Self {
@@ -62,6 +77,9 @@ impl Default for LifNeuron {
             last_spike: false,
             weights: Vec::new(),
             last_spike_time: -1,
+            adaptation: 0.0,
+            adaptation_decay: 0.02,
+            total_spikes: 0,
         }
     }
 }
@@ -75,19 +93,43 @@ impl LifNeuron {
     ///
     /// 1. Integration: `V ← V + stimulus`
     /// 2. Leak: `V ← V − V · decay_rate`
+    /// 3. Adaptation decay: `adaptation ← adaptation · (1 - adaptation_decay)`
     pub fn integrate(&mut self, stimulus: f32) {
         self.membrane_potential += stimulus;
         self.membrane_potential -= self.membrane_potential * self.decay_rate;
+        self.adaptation *= 1.0 - self.adaptation_decay;
+    }
+
+    /// Advance membrane dynamics with SAAQ adaptation-aware stimulus modulation.
+    ///
+    /// The effective stimulus is reduced by the neuron's adaptation state,
+    /// routing traffic away from exhausted neurons toward fresh ones.
+    ///
+    /// `V ← V + stimulus · (1 - adaptation) − V · decay_rate`
+    pub fn integrate_adaptive(&mut self, stimulus: f32) {
+        let modulated = stimulus * (1.0 - self.adaptation);
+        self.membrane_potential += modulated;
+        self.membrane_potential -= self.membrane_potential * self.decay_rate;
+        self.adaptation *= 1.0 - self.adaptation_decay;
     }
 
     /// Check threshold crossing. Returns `Some(peak_before_reset)` on spike,
     /// `None` otherwise. Hard-resets membrane to 0 on fire (refractory period).
+    /// Increments adaptation and total spike count on fire.
     pub fn check_fire(&mut self) -> Option<f32> {
         if self.membrane_potential >= self.threshold {
             let peak = self.membrane_potential;
             self.membrane_potential = 0.0;
+            self.adaptation = (self.adaptation + 0.1).min(1.0);
+            self.total_spikes += 1;
             return Some(peak);
         }
         None
+    }
+
+    /// Get the current quantization error estimate based on adaptation state.
+    /// Higher adaptation correlates with higher quantization instability.
+    pub fn quant_error_estimate(&self) -> f32 {
+        self.adaptation * 0.5 + (1.0 - self.adaptation) * 0.05
     }
 }
