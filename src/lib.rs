@@ -50,10 +50,12 @@
 
 pub mod lif;
 pub mod router;
+pub mod sparse;
 
 pub use lif::LifNeuron;
-pub use router::{
-    AhlRouter, AHL_NUM_CHANNELS, DomainSignals, RoutingDecision, VerificationDomain,
+pub use router::{AhlRouter, DomainSignals, RoutingDecision, VerificationDomain, AHL_NUM_CHANNELS};
+pub use sparse::{
+    RoutingPolicy, SparseSynapticMap, SparseSynapticMapBuilder, Synapse, TelemetrySnapshot,
 };
 
 #[cfg(test)]
